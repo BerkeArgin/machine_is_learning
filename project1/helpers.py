@@ -45,7 +45,7 @@ def batch_iter(y, tx, batch_size, num_batches=1, shuffle=True):
         shuffle: If True, the data is shuffled; otherwise, data is taken sequentially.
 
     Returns:
-       minibatch_y, minibatch_tx containing the output labels and input data for a mini-batch.
+       Containing the output labels and input data for a mini-batch.
     """
     data_size = len(y)
     batch_size = min(data_size, batch_size)  # Limit the possible size of the batch.
