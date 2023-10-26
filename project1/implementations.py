@@ -340,7 +340,7 @@ def reg_weighted_logistic_regression_balanced(y, tx, lambda_, initial_w, max_ite
     w = initial_w
     
     # Calculate class weights
-    if class_weights:
+    if not class_weights:
         total_samples = len(y)
         w1 = total_samples / np.sum(y == 1)
         w2 = total_samples / np.sum(y == -1)
