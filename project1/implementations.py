@@ -163,12 +163,14 @@ def mean_squared_error_gd(y, tx, initial_w, max_iters, gamma):
         loss_values[-1]: The final loss value.
      """
     weigth_list = [initial_w]
-    loss_values = []
     w = initial_w
+    loss_values = [calculate_mse_loss(y, tx, w)]
     for iter_num in range(max_iters):
-        loss = calculate_mse_loss(y, tx, w)
-        gradient_vector = calculate_gradient(tx, loss)
+        # compute loss and gradient
+        gradient_vector = calculate_gradient(y, tx, w)
+        # update the weights
         w = w - gamma * gradient_vector
+        loss = calculate_mse_loss(y, tx, w)
         weigth_list.append(w)
         loss_values.append(loss)
         print("Mean Squared Error GD => {0}/{1}: loss={2}".format(iter_num, max_iters - 1,
@@ -188,18 +190,20 @@ def mean_squared_error_sgd(y, tx, initial_w,max_iters, gamma):
             weigth_list[-1]:Optimized weight vector after stochastic gradient descent
             loss_values[-1]: The final loss value.
          """
-    weigth_list = [initial_w]
-    loss_values = []
     w = initial_w
+    weigth_list = [initial_w]
+    loss_values = [calculate_mse_loss(y, tx, w)]
+
     for n_iter in range(max_iters):
         for yn, txn in batch_iter(y, tx, 1, 1):
-            loss = calculate_mse_loss(yn, txn, w)
-            gradient_vector = calculate_gradient(txn, loss)
+            gradient_vector = calculate_gradient(yn, txn, w)
             w = w - gamma * gradient_vector
-            print("Stochastic Gradient Descent({bi}/{ti}): loss={l}".format(
-                bi=n_iter, ti=max_iters - 1, l=loss))  # for tracking the situation
+            loss = calculate_mse_loss(yn, txn, w)
+            weigth_list.append(w)
+            loss_values.append(loss)
+        print("Stochastic Gradient Descent({bi}/{ti}): loss={l}".format(
+            bi=n_iter, ti=max_iters - 1, l=loss))  # for tracking the situation
     return weigth_list[-1], loss_values[-1]
-
 
 def least_squares(y, tx):
     """
@@ -263,8 +267,8 @@ def logistic_regression(y, tx, initial_w,max_iters, gamma):
     w = initial_w
     for _ in range(max_iters):
         gradient_vector = calculate_logistic_gradient(y, tx, w)
-        loss = calculate_logistic_loss(y, tx, w)
         w = w - gamma * gradient_vector
+        loss = calculate_logistic_loss(y, tx, w)
 
         weigth_list.append(w)
         loss_values.append(loss)
@@ -299,53 +303,3 @@ def reg_logistic_regression(y, tx, lambda_ ,initial_w, max_iters, gamma):
 
     return weight_list[-1], loss_values[-1]
 
-
-
-def calculate_logistic_regression_regularized_w_clw(y, tx, w, lambda_, predictions,weighted_tx):
-    """
-        Compute the gradient of the negative log likelihood for logistic regression with regularization term for l2".
-
-        Args:
-            y: A numpy array of shape (N,) containing the observed outputs.
-            tx: A numpy array of shape (N, D) containing the feature matrix of the data.
-            w: A numpy array of shape (D,) which is the weight vector.
-            lambda_: Regularization parameter.
-            predictions: The result of sigmoid function.
-
-        Returns:
-            gradient_vector_regularized: Gradient vector which has shape (D,)
-        """
-    gradient_vector_regularized = (weighted_tx).T.dot(predictions - y) / y.shape[0] + 2 * lambda_ * w
-    return gradient_vector_regularized
-
-def reg_logistic_regression_w_clw(y, tx, lambda_ ,initial_w, max_iters, gamma,class_weights={-1:0.1,1:0.9}):
-    """
-        Regularized logistic regression using gradient descent
-         Args:
-            y: Vector of labels. (shape (N,))
-            tx: Matrix of features/input data. (shape (N,D))
-            initial_w: Initial vector of weights for the model. (shape (D, ))
-            max_iters: Maximum number of iterations for the optimization.
-            gamma: Learning rate.
-
-         Returns:
-            weigth_list[-1]: Optimized weight vector.
-            loss_values[-1]: The final loss value.
-        """
-    weight_list = [initial_w]
-    loss_values = []
-    w = initial_w
-    samp_weights=np.ones_like(y)
-    for label in class_weights:
-        samp_weights[y==label]=class_weights[label]*samp_weights[y==label]
-    weighted_tx=samp_weights.reshape(-1,1)*tx
-    for _ in range(max_iters):
-        predictions = sigmoid((tx).dot(w))
-        gradient = calculate_logistic_regression_regularized_w_clw(y, tx, w, lambda_, predictions,weighted_tx)
-        w = w - gamma * gradient
-        loss = calculate_logistic_loss(y, tx, w)
-
-        weight_list.append(w)
-        loss_values.append(loss)
-
-    return weight_list[-1], loss_values[-1]
