@@ -3,13 +3,17 @@ import numpy as np
 
 ########################## PREPROCESSING #####################################################
 
-def standardize(x):
+def standardize(x,mean=None,std=None):
     """Standardize the original data set."""
-    mean_x = np.mean(x)
-    x = x - mean_x
-    std_x = np.std(x)
-    x = x / std_x
-    return x, mean_x, std_x
+    if mean==None:
+        mean = np.mean(x)
+        x = x - mean
+        std= np.std(x)
+        x = x / std
+    else:
+        x=x-mean
+        x=x/std
+    return x, mean, std
 
 def missing_values_outliers(x, coefficient):
     """ Handles missing values by replacing them with the mean of their corresponding column
@@ -316,20 +320,23 @@ def calculate_weighted_logistic_gradient_with_regularization(y, tx, w, lambda_, 
         Weighted logistic regression gradient with regularization.
     """
     pred_probs = 1 / (1 + np.exp(-np.dot(tx, w)))
-    gradient = np.dot(tx.T, (pred_probs - y) * (w1 * y - w2 * (1 - y))) + lambda_ * w
+    gradient = np.dot(tx.T, (pred_probs - y) * (w1 * y - w2 * (1 - y))) /y.shape[0] + lambda_ * w
     return gradient
 
 
-def reg_weighted_logistic_regression_balanced(y, tx, lambda_, initial_w, max_iters, gamma,class_weights=None):
+import numpy as np
+
+def reg_weighted_logistic_regression_balanced(y, tx, lambda_, initial_w, max_iters, gamma, class_weights=None):
     """
-    Regularized weighted logistic regression using gradient descent.
-    
+    Regularized weighted logistic regression using gradient descent for binary classification with labels -1 and 1.
+
     Args:
         y: Vector of labels. (shape (N,))
-        tx: Matrix of features/input data. (shape (N,D))
-        initial_w: Initial vector of weights for the model. (shape (D, ))
+        tx: Matrix of features/input data. (shape (N, D))
+        initial_w: Initial vector of weights for the model. (shape (D,))
         max_iters: Maximum number of iterations for the optimization.
         gamma: Learning rate.
+        class_weights: Class weights for labels -1 and 1 as a tuple (weight_for_minus_1, weight_for_1).
 
     Returns:
         weight_list[-1]: Optimized weight vector.
@@ -338,26 +345,23 @@ def reg_weighted_logistic_regression_balanced(y, tx, lambda_, initial_w, max_ite
     weight_list = [initial_w]
     loss_values = []
     w = initial_w
-    
-    # Calculate class weights
-    if not class_weights:
-        total_samples = len(y)
-        w1 = total_samples / np.sum(y == 1)
-        w2 = total_samples / np.sum(y == -1)
-    else:
-        w1=class_weights[1]
-        w2=class_weights[-1]
 
-    print(w1) #11
-    print(w2) #1.9
+    # Calculate class weights
+    if class_weights is None:
+        w_minus_1 = 1.0  # Default weight for -1
+        w_1 = 1.0  # Default weight for 1
+    else:
+        w_minus_1, w_1 = class_weights
+
+    # Convert labels from -1 and 1 to 0 and 1
+    y = (y + 1) / 2
 
     for _ in range(max_iters):
-        gradient = calculate_weighted_logistic_gradient_with_regularization(y, tx, w, lambda_, w1, w2)
+        gradient = calculate_weighted_logistic_gradient_with_regularization(y, tx, w, lambda_, w_minus_1, w_1)
         w = w - gamma * gradient
-        loss = calculate_weighted_logistic_loss(y, tx, w, w1, w2) + (lambda_ / 2) * np.linalg.norm(w)**2
-        
+        loss = calculate_weighted_logistic_loss(y, tx, w, lambda_, w_minus_1, w_1)
+
         weight_list.append(w)
         loss_values.append(loss)
 
     return weight_list[-1], loss_values[-1]
-
