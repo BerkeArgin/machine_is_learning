@@ -303,3 +303,65 @@ def reg_logistic_regression(y, tx, lambda_ ,initial_w, max_iters, gamma):
 
     return weight_list[-1], loss_values[-1]
 
+
+def calculate_weighted_logistic_gradient_with_regularization(y, tx, w, lambda_, w1, w2):
+    """
+    Compute the gradient for weighted logistic regression with regularization.
+
+    Args:
+        y: A numpy array of shape (N,) containing the observed outputs.
+        tx: A numpy array of shape (N, D) containing the feature matrix of the data.
+        w: A numpy array of shape (D,) which is the weight vector.
+        lambda_: Regularization parameter.
+        w1: Weight for class 1 (minority class).
+        w2: Weight for class 0 (majority class).
+
+    Returns:
+        Weighted logistic regression gradient with regularization.
+    """
+    pred_probs = 1 / (1 + np.exp(-np.dot(tx, w)))
+    gradient = np.dot(tx.T, (pred_probs - y) * (w1 * y - w2 * (1 - y))) + lambda_ * w
+    return gradient
+
+
+def reg_weighted_logistic_regression_balanced(y, tx, lambda_, initial_w, max_iters, gamma,class_weights=None):
+    """
+    Regularized weighted logistic regression using gradient descent.
+    
+    Args:
+        y: Vector of labels. (shape (N,))
+        tx: Matrix of features/input data. (shape (N,D))
+        initial_w: Initial vector of weights for the model. (shape (D, ))
+        max_iters: Maximum number of iterations for the optimization.
+        gamma: Learning rate.
+
+    Returns:
+        weight_list[-1]: Optimized weight vector.
+        loss_values[-1]: The final loss value.
+    """
+    weight_list = [initial_w]
+    loss_values = []
+    w = initial_w
+    
+    # Calculate class weights
+    if not class_weights:
+        total_samples = len(y)
+        w1 = total_samples / np.sum(y == 1)
+        w2 = total_samples / np.sum(y == -1)
+    else:
+        w1=class_weights[1]
+        w2=class_weights[-1]
+
+    print(w1) #11
+    print(w2) #1.9
+
+    for _ in range(max_iters):
+        gradient = calculate_weighted_logistic_gradient_with_regularization(y, tx, w, lambda_, w1, w2)
+        w = w - gamma * gradient
+        loss = calculate_weighted_logistic_loss(y, tx, w, w1, w2) + (lambda_ / 2) * np.linalg.norm(w)**2
+        
+        weight_list.append(w)
+        loss_values.append(loss)
+
+    return weight_list[-1], loss_values[-1]
+

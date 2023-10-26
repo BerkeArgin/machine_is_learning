@@ -151,6 +151,27 @@ def calculate_logistic_regression_regularized(y, tx, w, lambda_, predictions):
     gradient_vector_regularized = tx.T.dot(predictions - y) / y.shape[0] + 2 * lambda_ * w
     return gradient_vector_regularized
 
+
+def calculate_weighted_logistic_loss(y, tx, w, w1, w2):
+    """
+    Compute the weighted negative log likelihood for logistic regression.
+
+    Args:
+        y: A numpy array of shape (N,) containing the observed outputs.
+        tx: A numpy array of shape (N, D) containing the feature matrix of the data.
+        w: A numpy array of shape (D,) which is the weight vector.
+        w1: Weight for class 1 (minority class).
+        w2: Weight for class 0 (majority class).
+
+    Returns:
+        Weighted negative log likelihood loss.
+    """
+    t = np.dot(tx, w)
+    pred_probs = 1 / (1 + np.exp(-t))
+    loss = -np.mean(w1 * y * np.log(pred_probs + 1e-15) + w2 * (1 - y) * np.log(1 - pred_probs + 1e-15))
+    return loss
+
+
 def load_csv_data(data_path, sub_sample=False):
     """
     This function loads the data and returns the respectinve numpy arrays.
