@@ -320,7 +320,7 @@ def calculate_weighted_logistic_gradient_with_regularization(y, tx, w, lambda_, 
     return gradient
 
 
-def reg_weighted_logistic_regression_balanced(y, tx, lambda_, initial_w, max_iters, gamma,class_weigths=None):
+def reg_weighted_logistic_regression_balanced(y, tx, lambda_, initial_w, max_iters, gamma,class_weights=None):
     """
     Regularized weighted logistic regression using gradient descent.
     
@@ -340,13 +340,13 @@ def reg_weighted_logistic_regression_balanced(y, tx, lambda_, initial_w, max_ite
     w = initial_w
     
     # Calculate class weights
-    if class_weigths:
+    if class_weights:
         total_samples = len(y)
         w1 = total_samples / np.sum(y == 1)
         w2 = total_samples / np.sum(y == -1)
     else:
-        w1=class_weigths[1]
-        w2=class_weigths[-1]
+        w1=class_weights[1]
+        w2=class_weights[-1]
 
     print(w1) #11
     print(w2) #1.9
