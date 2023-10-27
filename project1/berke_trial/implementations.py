@@ -69,7 +69,6 @@ def batch_iter(y, tx, batch_size, num_batches=1, shuffle=True):
         )
         yield y[start_index:end_index], tx[start_index:end_index]
 
-
 def sigmoid(x):
     """
     Applies the sigmoid function to a given input.
@@ -78,7 +77,14 @@ def sigmoid(x):
     Returns:
         The value of sigmoid function.
     """
-    return np.exp(x) / (1. + np.exp(x))
+    epsilon = 1e-15  # A small constant to avoid division by zero or log(0)
+    pred_probs = np.piecewise(
+        x,
+        [x > 0],
+        [lambda i: 1 / (1 + np.exp(-i)), lambda i: np.exp(i) / (1 + np.exp(i))],
+    )
+    return np.clip(pred_probs, epsilon, 1 - epsilon)
+
 
 def calculate_logistic_loss(y, tx, w):
     """
@@ -131,24 +137,7 @@ def calculate_logistic_regression_regularized(y, tx, w, lambda_, predictions):
     return gradient_vector_regularized
 
 
-def calculate_weighted_logistic_loss(y, tx, w, w0, w1):
-    """
-    Compute the weighted negative log likelihood for logistic regression.
 
-    Args:
-        y: A numpy array of shape (N,) containing the observed outputs.
-        tx: A numpy array of shape (N, D) containing the feature matrix of the data.
-        w: A numpy array of shape (D,) which is the weight vector.
-        w1: Weight for class 1 (minority class).
-        w2: Weight for class 0 (majority class).
-
-    Returns:
-        Weighted negative log likelihood loss.
-    """
-    t = np.dot(tx, w)
-    pred_probs = np.exp(t) / (1 + np.exp(t))
-    loss = -np.mean(w1 * y * np.log(pred_probs) + w0 * (1 - y) * np.log(1 - pred_probs))
-    return loss
 
 ########################## FUNCTIONS #####################################################
 
@@ -303,9 +292,34 @@ def reg_logistic_regression(y, tx, lambda_ ,initial_w, max_iters, gamma):
 
         weight_list.append(w)
         loss_values.append(loss)
-
+    print(loss_values[-5])
     return weight_list[-1], loss_values[-1]
 
+
+############################# Weighted Logistic Loss with regularization ##############################
+def calculate_weighted_logistic_loss(y, tx, w, w0, w1):
+    """
+    Compute the weighted negative log likelihood for logistic regression.
+
+    Args:
+        y: A numpy array of shape (N,) containing the observed outputs.
+        tx: A numpy array of shape (N, D) containing the feature matrix of the data.
+        w: A numpy array of shape (D,) which is the weight vector.
+        w1: Weight for class 1 (minority class).
+        w2: Weight for class 0 (majority class).
+
+    Returns:
+        Weighted negative log likelihood loss.
+    """
+    t = np.dot(tx, w)
+    pred_probs = sigmoid(t)
+    epsilon = 1e-15  # A small constant to avoid division by zero or log(0)
+    pred_probs = np.clip(pred_probs, epsilon, 1 - epsilon) 
+    #np.log(pred_probs)
+    loss = -np.mean(w0 * (1 - y) * np.log(1 - pred_probs) + w1 * y * np.log(pred_probs))
+    
+    #loss = -np.mean(w1 * y * np.log(pred_probs) + w0 * (1 - y) * np.log(1 - pred_probs))
+    return loss
 
 def calculate_weighted_logistic_gradient_with_regularization(y, tx, w, lambda_, w0, w1):
     """
@@ -324,8 +338,18 @@ def calculate_weighted_logistic_gradient_with_regularization(y, tx, w, lambda_, 
     """
     txw=np.dot(tx, w)
     pred_probs = sigmoid(txw)
-    gradient = -np.dot(tx.T,(w1*y*(1-pred_probs))-(w0*(1-y)*pred_probs))/y.shape[0] + lambda_ * w
+    
+    epsilon = 1e-15  # A small constant to avoid division by zero or log(0)
+    pred_probs = np.clip(pred_probs, epsilon, 1 - epsilon) 
+
+    
+    
+    #gradient = -(np.dot(tx.T,(w1*y*(1-pred_probs))-(w0*(1-y)*pred_probs))/y.shape[0]) + lambda_ * w
+    
+    gradient = tx.T.dot(w1 * (pred_probs - y) - w0 * (pred_probs - y))/y.shape[0] + lambda_ * w
+    
     #gradient = np.dot(tx.T, (pred_probs - y) * (w1 * y - w2 * (1 - y))) /y.shape[0] + lambda_ * w
+    
     return gradient
 
 
