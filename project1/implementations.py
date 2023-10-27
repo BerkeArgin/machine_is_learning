@@ -308,7 +308,7 @@ def reg_logistic_regression(y, tx, lambda_ ,initial_w, max_iters, gamma):
     return weight_list[-1], loss_values[-1]
 
 
-def calculate_weighted_logistic_gradient_with_regularization(y, tx, w, lambda_, w1, w2):
+def calculate_weighted_logistic_gradient_with_regularization(y, tx, w, lambda_, w0, w1):
     """
     Compute the gradient for weighted logistic regression with regularization.
 
@@ -323,8 +323,10 @@ def calculate_weighted_logistic_gradient_with_regularization(y, tx, w, lambda_, 
     Returns:
         Weighted logistic regression gradient with regularization.
     """
-    pred_probs = 1 / (1 + np.exp(-np.dot(tx, w)))
-    gradient = np.dot(tx.T, (pred_probs - y) * (w1 * y - w2 * (1 - y))) /y.shape[0] + lambda_ * w
+    txw=np.dot(tx, w)
+    pred_probs = np.exp(txw) / (1 + np.exp(txw))
+    gradient = -np.dot(tx.T,(w1*y*(1-pred_probs))-(w0*(1-y)*pred_probs))/y.shape[0] +lambda_ * w
+    #gradient = np.dot(tx.T, (pred_probs - y) * (w1 * y - w2 * (1 - y))) /y.shape[0] + lambda_ * w
     return gradient
 
 
@@ -352,20 +354,21 @@ def reg_weighted_logistic_regression_balanced(y, tx, lambda_, initial_w, max_ite
 
     # Calculate class weights
     if class_weights is None:
-        w_minus_1 = 1.0  # Default weight for -1
+        w_0 = 1.0  # Default weight for 0
         w_1 = 1.0  # Default weight for 1
     else:
-        w_minus_1, w_1 = class_weights
-
+        w_0, w_1 = class_weights
+    
+    print(w_0,w_1)
     # Convert labels from -1 and 1 to 0 and 1
-    y = (y + 1) / 2
+    #y = (y + 1) / 2
 
     for _ in range(max_iters):
-        gradient = calculate_weighted_logistic_gradient_with_regularization(y, tx, w, lambda_, w_minus_1, w_1)
+        gradient = calculate_weighted_logistic_gradient_with_regularization(y, tx, w, lambda_, w_0, w_1)
         w = w - gamma * gradient
-        loss = calculate_weighted_logistic_loss(y, tx, w, lambda_, w_minus_1, w_1)
-
+        loss = calculate_weighted_logistic_loss(y, tx, w, w_0, w_1)
+        #print(loss)
         weight_list.append(w)
         loss_values.append(loss)
-
+    print(loss_values[-5:])
     return weight_list[-1], loss_values[-1]

@@ -3,3 +3,6 @@
 project1/.DS_Store
 *.pyc
 *.csv
+*.tsv
+project1/catboost_info/catboost_training.json
+project1/catboost_info/learn/events.out.tfevents

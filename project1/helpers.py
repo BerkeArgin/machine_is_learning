@@ -80,7 +80,7 @@ def sigmoid(x):
     Returns:
         The value of sigmoid function.
     """
-    return 1. / (1. + np.exp(-x))
+    return np.exp(x) / (1. + np.exp(x))
 
 def calculate_logistic_loss(y, tx, w):
     """
@@ -167,8 +167,8 @@ def calculate_weighted_logistic_loss(y, tx, w, w1, w2):
         Weighted negative log likelihood loss.
     """
     t = np.dot(tx, w)
-    pred_probs = 1 / (1 + np.exp(-t))
-    loss = -np.mean(w1 * y * np.log(pred_probs + 1e-15) + w2 * (1 - y) * np.log(1 - pred_probs + 1e-15))
+    pred_probs = np.exp(t) / (1 + np.exp(t))
+    loss = -np.mean(w2 * y * np.log(pred_probs) + w1 * (1 - y) * np.log(1 - pred_probs))
     return loss
 
 
