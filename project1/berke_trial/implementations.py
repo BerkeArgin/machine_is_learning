@@ -85,6 +85,11 @@ def sigmoid(x):
     )
     return np.clip(pred_probs, epsilon, 1 - epsilon)
 
+def logit_predict(x,w,threshold=0.5):
+    scores=sigmoid(x.dot(w))
+    y_pred=np.zeros_like(scores)
+    y_pred[scores>threshold]=1
+    return y_pred,scores
 
 def calculate_logistic_loss(y, tx, w):
     """
@@ -119,22 +124,7 @@ def calculate_logistic_gradient(y, tx, w):
     gradient_vector = tx.T.dot(predicted_probs - y)
     return gradient_vector
 
-def calculate_logistic_regression_regularized(y, tx, w, lambda_, predictions):
-    """
-        Compute the gradient of the negative log likelihood for logistic regression with regularization term for l2".
 
-        Args:
-            y: A numpy array of shape (N,) containing the observed outputs.
-            tx: A numpy array of shape (N, D) containing the feature matrix of the data.
-            w: A numpy array of shape (D,) which is the weight vector.
-            lambda_: Regularization parameter.
-            predictions: The result of sigmoid function.
-
-        Returns:
-            gradient_vector_regularized: Gradient vector which has shape (D,)
-        """
-    gradient_vector_regularized = tx.T.dot(predictions - y) / y.shape[0] + 2 * lambda_ * w
-    return gradient_vector_regularized
 
 
 
@@ -266,6 +256,25 @@ def logistic_regression(y, tx, initial_w,max_iters, gamma):
         loss_values.append(loss)
     return weigth_list[-1], loss_values[-1]
 
+############################# Logistic Regression with Regularization ##############################
+
+def calculate_logistic_regression_regularized(y, tx, w, lambda_, predictions):
+    """
+        Compute the gradient of the negative log likelihood for logistic regression with regularization term for l2".
+
+        Args:
+            y: A numpy array of shape (N,) containing the observed outputs.
+            tx: A numpy array of shape (N, D) containing the feature matrix of the data.
+            w: A numpy array of shape (D,) which is the weight vector.
+            lambda_: Regularization parameter.
+            predictions: The result of sigmoid function.
+
+        Returns:
+            gradient_vector_regularized: Gradient vector which has shape (D,)
+        """
+    gradient_vector_regularized = tx.T.dot(predictions - y) / y.shape[0] + 2 * lambda_ * w
+    return gradient_vector_regularized
+
 def reg_logistic_regression(y, tx, lambda_ ,initial_w, max_iters, gamma):
     """
         Regularized logistic regression using gradient descent
@@ -296,7 +305,7 @@ def reg_logistic_regression(y, tx, lambda_ ,initial_w, max_iters, gamma):
     return weight_list[-1], loss_values[-1]
 
 
-############################# Weighted Logistic Loss with regularization ##############################
+############################# Weighted Logistic Regression with regularization ##############################
 def calculate_weighted_logistic_loss(y, tx, w, w0, w1):
     """
     Compute the weighted negative log likelihood for logistic regression.
