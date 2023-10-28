@@ -3,7 +3,6 @@ import csv
 import numpy as np
 import os
 
-
 def calculate_mse_loss(y, tx, w):
     """
     Calculate Mean Absolute Error Loss
@@ -20,7 +19,7 @@ def calculate_mse_loss(y, tx, w):
     return np.mean((y - y_pred) ** 2) / 2
 
 
-def calculate_gradient(tx, error):
+def calculate_gradient(y, tx, w):
     """
     This function calculates the gradient at w and return gradient and error values.
     Args:
@@ -30,8 +29,8 @@ def calculate_gradient(tx, error):
     Returns:
        The gradient of least squares (shape (D,)) and the error between observed and predicted outputs (shape (N,))
     """
-    gradient = -np.dot(tx.T, error) / error.size
-    return gradient
+    error = y - tx.dot(w)
+    return -tx.T.dot(error) / error.size
 
 
 def batch_iter(y, tx, batch_size, num_batches=1, shuffle=True):
@@ -99,6 +98,25 @@ def calculate_logistic_loss(y, tx, w):
     return loss
 
 
+def calculate_weighted_logistic_loss(y, tx, w, w1, w2):
+    """
+    Compute the weighted negative log likelihood for logistic regression.
+
+    Args:
+        y: A numpy array of shape (N,) containing the observed outputs.
+        tx: A numpy array of shape (N, D) containing the feature matrix of the data.
+        w: A numpy array of shape (D,) which is the weight vector.
+        w1: Weight for class 1 (minority class).
+        w2: Weight for class 0 (majority class).
+
+    Returns:
+        Weighted negative log likelihood loss.
+    """
+    t = np.dot(tx, w)
+    pred_probs = 1 / (1 + np.exp(-t))
+    loss = -np.mean(w1 * y * np.log(pred_probs + 1e-15) + w2 * (1 - y) * np.log(1 - pred_probs + 1e-15))
+    return loss
+
 def calculate_logistic_gradient(y, tx, w):
     """
     Compute the gradient of the negative log likelihood for logistic regression.
@@ -115,7 +133,7 @@ def calculate_logistic_gradient(y, tx, w):
     gradient_vector = tx.T.dot(predicted_probs - y)
     return gradient_vector
 
-def calculate_logistic_regression_regularized(y, tx, w, lambda_, predictions):
+def calculate_logistic_regression_regularized(y, tx, w, lambda_):
     """
         Compute the gradient of the negative log likelihood for logistic regression with regularization term for l2".
 
@@ -124,15 +142,35 @@ def calculate_logistic_regression_regularized(y, tx, w, lambda_, predictions):
             tx: A numpy array of shape (N, D) containing the feature matrix of the data.
             w: A numpy array of shape (D,) which is the weight vector.
             lambda_: Regularization parameter.
-            predictions: The result of sigmoid function.
-
         Returns:
             gradient_vector_regularized: Gradient vector which has shape (D,)
         """
+    predictions = sigmoid(tx.dot(w))
     gradient_vector_regularized = tx.T.dot(predictions - y) / y.shape[0] + 2 * lambda_ * w
     return gradient_vector_regularized
 
-def load_csv_data(data_path, sub_sample=False):
+
+def calculate_weighted_logistic_loss(y, tx, w, w1, w2):
+    """
+    Compute the weighted negative log likelihood for logistic regression.
+
+    Args:
+        y: A numpy array of shape (N,) containing the observed outputs.
+        tx: A numpy array of shape (N, D) containing the feature matrix of the data.
+        w: A numpy array of shape (D,) which is the weight vector.
+        w1: Weight for class 1 (minority class).
+        w2: Weight for class 0 (majority class).
+
+    Returns:
+        Weighted negative log likelihood loss.
+    """
+    t = np.dot(tx, w)
+    pred_probs = 1 / (1 + np.exp(-t))
+    loss = -np.mean(w1 * y * np.log(pred_probs + 1e-15) + w2 * (1 - y) * np.log(1 - pred_probs + 1e-15))
+    return loss
+
+
+def load_csv_data(data_path, sub_sample=False, selected_cols=None):
     """
     This function loads the data and returns the respectinve numpy arrays.
     Remember to put the 3 files in the same folder and to not change the names of the files.
@@ -148,6 +186,9 @@ def load_csv_data(data_path, sub_sample=False):
         train_ids (np.array): ids of training data
         test_ids (np.array): ids of test data
     """
+    with open(os.path.join(data_path, "x_train.csv"), 'r') as f:
+        header = f.readline().strip().split(',')
+
     y_train = np.genfromtxt(
         os.path.join(data_path, "y_train.csv"),
         delimiter=",",
@@ -166,6 +207,27 @@ def load_csv_data(data_path, sub_sample=False):
     test_ids = x_test[:, 0].astype(dtype=int)
     x_train = x_train[:, 1:]
     x_test = x_test[:, 1:]
+    col_names_train = np.genfromtxt(os.path.join(data_path, "x_train.csv"), delimiter=',', max_rows=1, dtype=str).tolist()[1:]  # Exclude 'Id' column
+    col_names_test = np.genfromtxt(os.path.join(data_path, "x_test.csv"), delimiter=',', max_rows=1, dtype=str).tolist()[1:]  # Exclude 'Id' column
+
+    # If selected columns are provided, filter data
+    
+    if selected_cols:
+        all_selected_cols = selected_cols["categorical_vars"] + selected_cols["numerical_vars"]
+        selected_indices_train = [col_names_train.index(col) for col in all_selected_cols if col in col_names_train]
+        selected_indices_test = [col_names_test.index(col) for col in all_selected_cols if col in col_names_test]
+    
+        # Before modifying x_train, get the original indices of the categorical columns
+        original_cat_indices = [col_names_train.index(col) for col in selected_cols["categorical_vars"] if col in col_names_train]
+    
+        col_names_train = [col_names_train[i] for i in selected_indices_train]
+        col_names_test = [col_names_test[i] for i in selected_indices_test]
+        
+        x_train = x_train[:, selected_indices_train]
+        x_test = x_test[:, selected_indices_test]
+        
+        # Calculate the new categorical column indices in the modified x_train
+        new_cat_indices = [selected_indices_train.index(idx) for idx in original_cat_indices]
 
     # sub-sample
     if sub_sample:
@@ -173,8 +235,7 @@ def load_csv_data(data_path, sub_sample=False):
         x_train = x_train[::50]
         train_ids = train_ids[::50]
 
-    return x_train, x_test, y_train, train_ids, test_ids
-
+    return x_train, x_test, y_train, train_ids, test_ids, new_cat_indices
 
 def create_csv_submission(ids, y_pred, name):
     """
