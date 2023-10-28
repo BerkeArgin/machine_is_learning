@@ -2,6 +2,38 @@ from helpers import *
 from implementations import *
 from preprocess import *
 
+def calculate_metrics(y_pred,y_true):
+    accuracy=y_pred[y_pred==y_true].shape[0]/y_pred.shape[0]
+    precision={};recall={}
+    for label in np.unique(y_true):
+        try:
+            precision[label]=y_pred[(y_pred==label) & (y_true==label)].shape[0]/y_pred[y_pred==label].shape[0]
+        except:
+            continue
+        try:
+            recall[label]=y_pred[(y_pred==label) & (y_true==label)].shape[0]/y_true[y_true==label].shape[0]
+        except:
+            continue
+    
+    f1_scores = {}
+    for label in precision.keys():
+        if precision[label] + recall[label] != 0:
+            f1_scores[label] = 2 * (precision[label] * recall[label]) / (precision[label] + recall[label])
+        else:
+            f1_scores[label] = 0.0
+
+    return accuracy,precision,recall,f1_scores
+
+def calculate_confusion_mat(y_pred,y_true):
+    unique_labels=np.unique(y_true)
+    conf_matrix=np.zeros((len(unique_labels),len(unique_labels)))
+    #print(conf_matrix.shape)
+    for i,pred_label in enumerate(unique_labels):
+        for j,true_label in enumerate(unique_labels):
+            conf_matrix[i,j]=y_pred[(y_pred==pred_label) & (y_true==true_label)].shape[0]
+    return conf_matrix
+
+
 variables = [
     "GENHLTH", "_RFHLTH",
     "HLTHPLN1", "_HCVU651",

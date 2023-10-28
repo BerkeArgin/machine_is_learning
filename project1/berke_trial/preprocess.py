@@ -4,13 +4,15 @@ import numpy as np
 
 def standardize(x,mean=None,std=None):
     """Standardize the original data set."""
-    if mean==None or std==None:
-        mean = np.mean(x)
+    if mean is None or std is None:
+        mean = np.mean(x,axis=0)
+        #print(mean.shape)
         x = x - mean
-        std= np.std(x)
+        std = np.clip(np.std(x,axis=0),1e-15,1e15)
         x = x / std
     else:
         x = x - mean
+        std = np.clip(std,1e-15,1e15)
         x = x / std
     return x, mean, std
 
@@ -20,7 +22,30 @@ def drop_high_nan_columns(data, threshold=0.33):
     
     # Finding the indices that were dropped
     dropped_indices = np.where(nan_proportions > threshold)[0].tolist()
-    return data[:, cols_to_keep], dropped_indices, 
+    return data[:, cols_to_keep], dropped_indices,
+
+def handle_outliers(x, numerical_columns, coefficient=2, mean=None, std_x=None):
+    """ Addresses potential outliers in numerical columns by comparing z-scores """
+    cp_x = x[:,numerical_columns].copy()
+    cp_x[cp_x == -999] = np.nan
+    
+    if mean is None or std_x is None:
+        mean = np.nanmean(cp_x, axis=0)
+        std_x = np.nanstd(cp_x, axis=0)
+    else:
+        pass
+
+
+    if coefficient != -1:
+        lower_bound = mean - coefficient * std_x
+        upper_bound = mean + coefficient * std_x
+        cp_x_up=upper_bound-cp_x
+        cp_x_lo=lower_bound-cp_x
+        cp_x[(cp_x_up<0) & (cp_x_lo>0)]=np.nan
+
+    returned_data=x.copy()
+    returned_data[:,numerical_columns]=cp_x
+    return returned_data, mean, std_x
 
 
 def handle_missing_values_np(data):
@@ -40,25 +65,18 @@ def handle_missing_values_np(data):
     most_frequent = np.array(most_frequent)
     return np.where(np.isnan(data), most_frequent, data)
 
-def standardize_data_np(data):
-    """
-    Standardizes the data to have zero mean and unit variance.
-    
-    Args:
-    - data (np.ndarray): The array to be standardized.
-    
-    Returns:
-    - np.ndarray: The standardized array.
-    """
-    means = np.mean(data, axis=0)
-    std_devs = np.std(data, axis=0)
-    return (data - means) / std_devs
-
 def select_categorical(x_train):
+    '''
+    Checks the count of non-nan unique values and determines which columns are going to be taken as
+    categorical.
+    '''
     unique_values_count = np.array([len(np.unique(column[~np.isnan(column)])) for column in x_train.T])
-    return unique_values_count
+    categorical_columns_indices = np.where(unique_values_count <= 10)[0]
+    numerical_columns_indices = np.where(unique_values_count > 10)[0]
 
-def one_hot_encode(data_train, data_test, unique_values_count):
+    return categorical_columns_indices,numerical_columns_indices
+
+def one_hot_encode(data_train, data_test, categorical_columns_indices):
     """
     One-hot encodes columns with 10 or fewer unique non-NaN values.
 
@@ -73,8 +91,6 @@ def one_hot_encode(data_train, data_test, unique_values_count):
     """
     
     # Identify which columns need one-hot encoding
-    categorical_columns_indices = np.where(unique_values_count <= 10)[0]
-    numerical_columns_indices = np.where(unique_values_count > 10)[0]
     
     # Apply one-hot encoding
     one_hot_encoded_data_train = []
@@ -102,7 +118,7 @@ def one_hot_encode(data_train, data_test, unique_values_count):
     data_test = np.delete(data_test, categorical_columns_indices, axis=1)
     data_test = np.hstack((data_test, one_hot_encoded_data_test))
     
-    return data_train, data_test, numerical_columns_indices
+    return data_train, data_test
 
 
 # Feature Selection
@@ -135,18 +151,22 @@ def remove_highly_correlated_features(X_train, X_test, threshold=0.95):
     return reduced_X_train, reduced_X_test
 
 
-def apply_preprocessing(x_train, x_test):
+def apply_preprocessing(x_train, x_test, coefficient=2):
+    
+    categorical_columns_indices, numerical_columns_indices = select_categorical(x_train)
+    
+    x_train, mean, std_x = handle_outliers(x_train, numerical_columns_indices, coefficient)
+    x_test, _, _ = handle_outliers(x_test, numerical_columns_indices, coefficient, mean, std_x)
+
+
     x_train, dropped_train_cols = drop_high_nan_columns(x_train)
     x_test = np.delete(x_test, dropped_train_cols, axis=1)
 
     x_train = handle_missing_values_np(x_train)
     x_test = handle_missing_values_np(x_test)
-
-    unique_values_count = select_categorical(x_train)
-    x_train, x_test, numerical_columns_indices = one_hot_encode(x_train,x_test, unique_values_count)
-
-    #x_train,mean,std = standardize(x_train)
-    #x_test,_,_ = standardize(x_test,mean,std)
+    
+    categorical_columns_indices, numerical_columns_indices = select_categorical(x_train)
+    x_train, x_test = one_hot_encode(x_train, x_test, categorical_columns_indices)
 
     x_train, x_test = remove_highly_correlated_features(x_train, x_test)
 

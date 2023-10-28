@@ -78,18 +78,13 @@ def sigmoid(x):
         The value of sigmoid function.
     """
     epsilon = 1e-15  # A small constant to avoid division by zero or log(0)
+    #TODO: Check this again
     pred_probs = np.piecewise(
         x,
         [x > 0],
         [lambda i: 1 / (1 + np.exp(-i)), lambda i: np.exp(i) / (1 + np.exp(i))],
     )
     return np.clip(pred_probs, epsilon, 1 - epsilon)
-
-def logit_predict(x,w,threshold=0.5):
-    scores=sigmoid(x.dot(w))
-    y_pred=np.zeros_like(scores)
-    y_pred[scores>threshold]=1
-    return y_pred,scores
 
 def calculate_logistic_loss(y, tx, w):
     """
@@ -187,6 +182,12 @@ def mean_squared_error_sgd(y, tx, initial_w,max_iters, gamma):
             bi=n_iter, ti=max_iters - 1, l=loss))  # for tracking the situation
     return weigth_list[-1], loss_values[-1]
 
+def least_sq_predict(x, w, threshold=0.5):
+    scores = x.dot(w)
+    y_pred = np.zeros_like(scores)
+    y_pred[scores > threshold] = 1
+    return y_pred, scores
+
 def least_squares(y, tx):
     """
     Linear regression with normal equations
@@ -205,6 +206,8 @@ def least_squares(y, tx):
     w = np.linalg.solve(X_transpose_X, X_transpose_y)
     loss = calculate_mse_loss(y, tx, w)
     return w, loss
+
+
 
 def ridge_regression(y, tx, lambda_ ):
     """
@@ -258,6 +261,12 @@ def logistic_regression(y, tx, initial_w,max_iters, gamma):
 
 ############################# Logistic Regression with Regularization ##############################
 
+def logit_predict(x,w,threshold=0.5):
+    scores=sigmoid(x.dot(w))
+    y_pred=np.zeros_like(scores)
+    y_pred[scores>threshold]=1
+    return y_pred,scores
+
 def calculate_logistic_regression_regularized(y, tx, w, lambda_, predictions):
     """
         Compute the gradient of the negative log likelihood for logistic regression with regularization term for l2".
@@ -301,106 +310,60 @@ def reg_logistic_regression(y, tx, lambda_ ,initial_w, max_iters, gamma):
 
         weight_list.append(w)
         loss_values.append(loss)
-    print(loss_values[-5])
+
     return weight_list[-1], loss_values[-1]
 
+############################# Ridge Regression with regularization ##############################
 
-############################# Weighted Logistic Regression with regularization ##############################
-def calculate_weighted_logistic_loss(y, tx, w, w0, w1):
+def ridge_predict(x, w, threshold=0.5):
+    scores = x.dot(w)
+    y_pred = np.zeros_like(scores)
+    y_pred[scores > threshold] = 1
+    return y_pred, scores
+
+def calculate_ridge_regression_regularized(y, tx, w, lambda_):
     """
-    Compute the weighted negative log likelihood for logistic regression.
+    Compute the gradient of the loss for ridge regression with L2 regularization term.
 
     Args:
-        y: A numpy array of shape (N,) containing the observed outputs.
-        tx: A numpy array of shape (N, D) containing the feature matrix of the data.
-        w: A numpy array of shape (D,) which is the weight vector.
-        w1: Weight for class 1 (minority class).
-        w2: Weight for class 0 (majority class).
+    y: A numpy array of shape (N,) containing the observed outputs.
+    tx: A numpy array of shape (N, D) containing the feature matrix of the data.
+    w: A numpy array of shape (D,) which is the weight vector.
+    lambda_: Regularization parameter.
 
     Returns:
-        Weighted negative log likelihood loss.
+    gradient_vector_regularized: Gradient vector which has shape (D,)
     """
-    t = np.dot(tx, w)
-    pred_probs = sigmoid(t)
-    epsilon = 1e-15  # A small constant to avoid division by zero or log(0)
-    pred_probs = np.clip(pred_probs, epsilon, 1 - epsilon) 
-    #np.log(pred_probs)
-    loss = -np.mean(w0 * (1 - y) * np.log(1 - pred_probs) + w1 * y * np.log(pred_probs))
-    
-    #loss = -np.mean(w1 * y * np.log(pred_probs) + w0 * (1 - y) * np.log(1 - pred_probs))
-    return loss
+    N = len(y)
+    gradient_vector_regularized = -tx.T.dot(y - tx.dot(w)) / N + 2 * lambda_ * w
+    return gradient_vector_regularized
 
-def calculate_weighted_logistic_gradient_with_regularization(y, tx, w, lambda_, w0, w1):
+def ridge_regression_gd(y, tx, lambda_, initial_w, max_iters, gamma):
     """
-    Compute the gradient for weighted logistic regression with regularization.
-
-    Args:
-        y: A numpy array of shape (N,) containing the observed outputs.
-        tx: A numpy array of shape (N, D) containing the feature matrix of the data.
-        w: A numpy array of shape (D,) which is the weight vector.
-        lambda_: Regularization parameter.
-        w1: Weight for class 1 (minority class).
-        w2: Weight for class 0 (majority class).
-
-    Returns:
-        Weighted logistic regression gradient with regularization.
-    """
-    txw=np.dot(tx, w)
-    pred_probs = sigmoid(txw)
-    
-    epsilon = 1e-15  # A small constant to avoid division by zero or log(0)
-    pred_probs = np.clip(pred_probs, epsilon, 1 - epsilon) 
-
-    
-    
-    #gradient = -(np.dot(tx.T,(w1*y*(1-pred_probs))-(w0*(1-y)*pred_probs))/y.shape[0]) + lambda_ * w
-    
-    gradient = tx.T.dot(w1 * (pred_probs - y) - w0 * (pred_probs - y))/y.shape[0] + lambda_ * w
-    
-    #gradient = np.dot(tx.T, (pred_probs - y) * (w1 * y - w2 * (1 - y))) /y.shape[0] + lambda_ * w
-    
-    return gradient
-
-
-import numpy as np
-
-def reg_weighted_logistic_regression(y, tx, lambda_, initial_w, max_iters, gamma, class_weights=None):
-    """
-    Regularized weighted logistic regression using gradient descent for binary classification with labels -1 and 1.
+    Regularized ridge regression using gradient descent.
 
     Args:
         y: Vector of labels. (shape (N,))
-        tx: Matrix of features/input data. (shape (N, D))
-        initial_w: Initial vector of weights for the model. (shape (D,))
+        tx: Matrix of features/input data. (shape (N,D))
+        lambda_: Regularization parameter.
+        initial_w: Initial vector of weights for the model. (shape (D, ))
         max_iters: Maximum number of iterations for the optimization.
         gamma: Learning rate.
-        class_weights: Class weights for labels -1 and 1 as a tuple (weight_for_minus_1, weight_for_1).
 
     Returns:
-        weight_list[-1]: Optimized weight vector.
+        weigth_list[-1]: Optimized weight vector.
         loss_values[-1]: The final loss value.
     """
     weight_list = [initial_w]
     loss_values = []
     w = initial_w
 
-    # Calculate class weights
-    if class_weights is None:
-        w_0 = 1.0  # Default weight for 0
-        w_1 = 1.0  # Default weight for 1
-    else:
-        w_0, w_1 = class_weights
-    
-    print(w_0,w_1)
-    # Convert labels from -1 and 1 to 0 and 1
-    #y = (y + 1) / 2
-
     for _ in range(max_iters):
-        gradient = calculate_weighted_logistic_gradient_with_regularization(y, tx, w, lambda_, w_0, w_1)
+        gradient = calculate_ridge_regression_regularized(y, tx, w, lambda_)
         w = w - gamma * gradient
-        loss = calculate_weighted_logistic_loss(y, tx, w, w_0, w_1)
-        #print(loss)
+        loss = calculate_mse_loss(y, tx, w)
+
         weight_list.append(w)
         loss_values.append(loss)
-    print(loss_values[-5:])
+
     return weight_list[-1], loss_values[-1]
