@@ -4,135 +4,7 @@ import numpy as np
 import os
 
 
-def calculate_mse_loss(y, tx, w):
-    """
-    Calculate Mean Absolute Error Loss
-    Args:
-        y: A numpy array of shape (N,) containing the observed outputs.
-        tx: A numpy array of shape (N, D) containing the feature matrix of the data.
-        w: A numpy array of shape (D,) which is the weight vector.
-
-    Returns:
-       The Mean Squared Error Loss between observed and predicted outputs
-
-    """
-    y_pred = tx.dot(w)
-    return np.mean((y - y_pred) ** 2) / 2
-
-
-def calculate_gradient(tx, error):
-    """
-    This function calculates the gradient at w and return gradient and error values.
-    Args:
-        tx: A numpy array of shape (N,) containing the observed outputs.
-        error:
-
-    Returns:
-       The gradient of least squares (shape (D,)) and the error between observed and predicted outputs (shape (N,))
-    """
-    gradient = -np.dot(tx.T, error) / error.size
-    return gradient
-
-
-def batch_iter(y, tx, batch_size, num_batches=1, shuffle=True):
-    """
-    Generate a minibatch iterator for a dataset.
-    Args:
-        y:  The output desired values.
-        tx: The input data.
-        batch_size: Size of each mini-batch.
-        num_batches: The number of mini-batches to produce.
-        shuffle: If True, the data is shuffled; otherwise, data is taken sequentially.
-
-    Returns:
-       Containing the output labels and input data for a mini-batch.
-    """
-    data_size = len(y)
-    batch_size = min(data_size, batch_size)  # Limit the possible size of the batch.
-    max_batches = int(
-        data_size / batch_size
-    )  # The maximum amount of non-overlapping batches that can be extracted from the data.
-    remainder = (
-            data_size - max_batches * batch_size
-    )
-    if shuffle:
-        idxs = np.random.randint(max_batches, size=num_batches) * batch_size
-        if remainder != 0:
-            # Add an random offset to the start of each batch to eventually consider the remainder points
-            # Without an offset, batches might start at indices: [0, 32, 64, 96] (assume remainder=4)
-            # With a random offset, batches would start at: [4, 36, 68, 100]
-            idxs += np.random.randint(remainder + 1, size=num_batches)
-    else:
-        idxs = np.array([i % max_batches for i in range(num_batches)]) * batch_size
-    for start in idxs:
-        start_index = start
-        end_index = (
-                start_index + batch_size
-        )
-        yield y[start_index:end_index], tx[start_index:end_index]
-
-
-def sigmoid(x):
-    """
-    Applies the sigmoid function to a given input.
-    Args:
-        x: Given input.
-    Returns:
-        The value of sigmoid function.
-    """
-    return 1. / (1. + np.exp(-x))
-
-def calculate_logistic_loss(y, tx, w):
-    """
-    Compute the negative log likelihood for logistic regression.
-
-    Args:
-        y: A numpy array of shape (N,) containing the observed outputs.
-        tx: A numpy array of shape (N, D) containing the feature matrix of the data.
-        w: A numpy array of shape (D,) which is the weight vector.
-
-    Returns:
-        Negative log likelihood loss.
-    """
-    t = np.dot(tx, w)
-    loss = np.sum(np.log(1 + np.exp(t)) - y * t) / y.shape[0]
-    return loss
-
-
-def calculate_logistic_gradient(y, tx, w):
-    """
-    Compute the gradient of the negative log likelihood for logistic regression.
-
-    Args:
-        y: A numpy array of shape (N,) containing the observed outputs.
-        tx: A numpy array of shape (N, D) containing the feature matrix of the data.
-        w: A numpy array of shape (D,) which is the weight vector.
-
-    Returns:
-        gradient_vector: Gradient vector which has shape (D,)
-    """
-    predicted_probs = sigmoid(tx.dot(w))
-    gradient_vector = tx.T.dot(predicted_probs - y)
-    return gradient_vector
-
-def calculate_logistic_regression_regularized(y, tx, w, lambda_, predictions):
-    """
-        Compute the gradient of the negative log likelihood for logistic regression with regularization term for l2".
-
-        Args:
-            y: A numpy array of shape (N,) containing the observed outputs.
-            tx: A numpy array of shape (N, D) containing the feature matrix of the data.
-            w: A numpy array of shape (D,) which is the weight vector.
-            lambda_: Regularization parameter.
-            predictions: The result of sigmoid function.
-
-        Returns:
-            gradient_vector_regularized: Gradient vector which has shape (D,)
-        """
-    gradient_vector_regularized = tx.T.dot(predictions - y) / y.shape[0] + 2 * lambda_ * w
-    return gradient_vector_regularized
-
-def load_csv_data(data_path, sub_sample=False):
+def load_csv_data(data_path, sub_sample=False, selected_cols=None):
     """
     This function loads the data and returns the respectinve numpy arrays.
     Remember to put the 3 files in the same folder and to not change the names of the files.
@@ -148,6 +20,9 @@ def load_csv_data(data_path, sub_sample=False):
         train_ids (np.array): ids of training data
         test_ids (np.array): ids of test data
     """
+    with open(os.path.join(data_path, "x_train.csv"), 'r') as f:
+        header = f.readline().strip().split(',')
+
     y_train = np.genfromtxt(
         os.path.join(data_path, "y_train.csv"),
         delimiter=",",
@@ -162,10 +37,23 @@ def load_csv_data(data_path, sub_sample=False):
         os.path.join(data_path, "x_test.csv"), delimiter=",", skip_header=1
     )
 
+    col_names_train = np.genfromtxt(data_path + "/x_train.csv", delimiter=',', max_rows=1, dtype=str).tolist()
+    col_names_test = np.genfromtxt(data_path + "/x_test.csv", delimiter=',', max_rows=1, dtype=str).tolist()
     train_ids = x_train[:, 0].astype(dtype=int)
     test_ids = x_test[:, 0].astype(dtype=int)
     x_train = x_train[:, 1:]
     x_test = x_test[:, 1:]
+
+    final_columns=[]
+    # Select only the specified columns
+    if selected_cols is not None:
+        selected_indices=[]
+        for col_name in selected_cols:
+            if col_name in header:
+                selected_indices.append(header.index(col_name) - 1)
+                final_columns.append(col_name)
+        x_train = x_train[:, selected_indices]
+        x_test = x_test[:,selected_indices]
 
     # sub-sample
     if sub_sample:
@@ -173,7 +61,7 @@ def load_csv_data(data_path, sub_sample=False):
         x_train = x_train[::50]
         train_ids = train_ids[::50]
 
-    return x_train, x_test, y_train, train_ids, test_ids
+    return x_train, x_test, y_train, train_ids, test_ids, col_names_train, col_names_test,final_columns
 
 
 def create_csv_submission(ids, y_pred, name):
