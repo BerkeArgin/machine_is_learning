@@ -359,6 +359,7 @@ def ridge_regression_gd(y, tx, lambda_, initial_w, max_iters, gamma):
     w = initial_w
 
     for _ in range(max_iters):
+        print(w)
         gradient = calculate_ridge_regression_regularized(y, tx, w, lambda_)
         w = w - gamma * gradient
         loss = calculate_mse_loss(y, tx, w)

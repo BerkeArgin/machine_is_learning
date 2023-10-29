@@ -157,7 +157,7 @@ def apply_preprocessing(x_train, x_test, coefficient=2):
     
     x_train, mean, std_x = handle_outliers(x_train, numerical_columns_indices, coefficient)
     x_test, _, _ = handle_outliers(x_test, numerical_columns_indices, coefficient, mean, std_x)
-
+    #print("imhere")
 
     x_train, dropped_train_cols = drop_high_nan_columns(x_train)
     x_test = np.delete(x_test, dropped_train_cols, axis=1)
