@@ -310,7 +310,7 @@ def reg_logistic_regression(y, tx, lambda_, initial_w, max_iters, gamma):
     weight = initial_w
 
     for _ in range(max_iters):
-        predictions = sigmoid(tx.dot(w))
+        predictions = sigmoid(tx.dot(weight))
         gradient = calculate_logistic_regression_regularized(
             y, tx, weight, lambda_, predictions
         )
