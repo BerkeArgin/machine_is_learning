@@ -127,7 +127,7 @@ def undersample(X, y, seed=42):
     return X_undersampled, y_undersampled
 
 
-data_path = "../data/dataset_to_release"
+data_path = "./data/dataset_to_release"
 (
     x_train,
     x_test,

@@ -1,7 +1,7 @@
 import numpy as np
 from preprocess import *
 from itertools import product
-
+from run import *
 
 def stratified_K_fold(y, k=5, seed=42):
     np.random.seed(seed)
@@ -122,12 +122,12 @@ def cross_validate(
 
         y_pred, scores = predict_function(X_undersampled, w, threshold=0.5)
         tr_accuracy, tr_precision, tr_recall, tr_f1_scores = calculate_metrics(
-            y_undersampled, y_pred
+            y_pred, y_undersampled
         )
 
         y_pred, scores = predict_function(x_val_fold, w, threshold=0.5)
         vl_accuracy, vl_precision, vl_recall, vl_f1_scores = calculate_metrics(
-            y_val_fold, y_pred
+            y_pred, y_val_fold
         )
 
         results_dict["name"] = train_func.__name__
