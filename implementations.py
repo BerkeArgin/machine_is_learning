@@ -66,6 +66,8 @@ def batch_iter(y, tx, batch_size, num_batches=1, shuffle=True):
         end_index = start_index + batch_size
         yield y[start_index:end_index], tx[start_index:end_index]
 
+def standard_sigmoid(x):
+    return 1 / (1 + np.exp(-x))
 
 def sigmoid(x):
     """
@@ -114,7 +116,7 @@ def calculate_logistic_gradient(y, tx, w):
     Returns:
         gradient_vector: Gradient vector which has shape (D,)
     """
-    predicted_probs = sigmoid(tx.dot(w))
+    predicted_probs = standard_sigmoid(tx.dot(w))
     gradient_vector = tx.T.dot(predicted_probs - y)
     return gradient_vector
 
