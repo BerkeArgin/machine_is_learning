@@ -253,8 +253,9 @@ def logistic_regression(y, tx, initial_w, max_iters, gamma):
         weight: Optimized weight vector.
         loss: The final loss value.
     """
-    weigth = initial_w
+    weight = initial_w
     loss = calculate_logistic_loss(y, tx, weight)
+
     for i in range(max_iters):
         # compute the gradient
         gradient_vector = calculate_logistic_gradient(y, tx, weight)
@@ -262,7 +263,7 @@ def logistic_regression(y, tx, initial_w, max_iters, gamma):
         weight = weight - gamma * gradient_vector
         loss = calculate_logistic_loss(y, tx, weight)
 
-    return weigth, loss
+    return weight, loss
 
 
 ############################# Logistic Regression with Regularization ##############################
