@@ -246,18 +246,15 @@ def logistic_regression(y, tx, initial_w,max_iters, gamma):
         weigth_list: Optimized weight vector.
         loss_values: The final loss value.
     """
+    weigth = initial_w
+    for i in range(max_iters):
+        # compute the gradient
+        gradient_vector = calculate_logistic_gradient(y, tx, weight)
+        # update weights
+        weight = weight - gamma * gradient_vector
+        loss = calculate_logistic_loss(y, tx, weight)
 
-    weigth_list = [initial_w]
-    loss_values = []
-    w = initial_w
-    for _ in range(max_iters):
-        gradient_vector = calculate_logistic_gradient(y, tx, w)
-        w = w - gamma * gradient_vector
-        loss = calculate_logistic_loss(y, tx, w)
-
-        weigth_list.append(w)
-        loss_values.append(loss)
-    return weigth_list[-1], loss_values[-1]
+    return weigth, loss
 
 ############################# Logistic Regression with Regularization ##############################
 
@@ -297,21 +294,18 @@ def reg_logistic_regression(y, tx, lambda_ ,initial_w, max_iters, gamma):
          Returns:
             weigth_list[-1]: Optimized weight vector.
             loss_values[-1]: The final loss value.
-        """
-    weight_list = [initial_w]
-    loss_values = []
-    w = initial_w
+    """
+    weight = initial_w
 
     for _ in range(max_iters):
         predictions = sigmoid(tx.dot(w))
-        gradient = calculate_logistic_regression_regularized(y, tx, w, lambda_, predictions)
-        w = w - gamma * gradient
-        loss = calculate_logistic_loss(y, tx, w)
+        gradient = calculate_logistic_regression_regularized(y, tx, weight, lambda_, predictions)
+        weight = weight - gamma * gradient
+        loss = calculate_logistic_loss(y, tx, weight)
 
-        weight_list.append(w)
-        loss_values.append(loss)
+    return weight, loss
 
-    return weight_list[-1], loss_values[-1]
+
 
 ############################# Ridge Regression with regularization ##############################
 
