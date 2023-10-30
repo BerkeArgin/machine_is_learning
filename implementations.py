@@ -50,9 +50,7 @@ def batch_iter(y, tx, batch_size, num_batches=1, shuffle=True):
     max_batches = int(
         data_size / batch_size
     )  # The maximum amount of non-overlapping batches that can be extracted from the data.
-    remainder = (
-            data_size - max_batches * batch_size
-    )
+    remainder = data_size - max_batches * batch_size
     if shuffle:
         idxs = np.random.randint(max_batches, size=num_batches) * batch_size
         if remainder != 0:
@@ -64,10 +62,9 @@ def batch_iter(y, tx, batch_size, num_batches=1, shuffle=True):
         idxs = np.array([i % max_batches for i in range(num_batches)]) * batch_size
     for start in idxs:
         start_index = start
-        end_index = (
-                start_index + batch_size
-        )
+        end_index = start_index + batch_size
         yield y[start_index:end_index], tx[start_index:end_index]
+
 
 def sigmoid(x):
     """
@@ -85,6 +82,7 @@ def sigmoid(x):
         [lambda i: 1 / (1 + np.exp(-i)), lambda i: np.exp(i) / (1 + np.exp(i))],
     )
     return np.clip(pred_probs, epsilon, 1 - epsilon)
+
 
 def calculate_logistic_loss(y, tx, w):
     """
@@ -120,25 +118,22 @@ def calculate_logistic_gradient(y, tx, w):
     return gradient_vector
 
 
-
-
-
-
 ########################## FUNCTIONS #####################################################
+
 
 def mean_squared_error_gd(y, tx, initial_w, max_iters, gamma):
     """
-     Linear regression using gradient descent
-     Args:
-         y: Vector of labels. (shape (N,))
-        tx: Matrix of features/input data. (shape (N,D))
-        initial_w: Initial vector of weights for the model. (shape (D, ))
-        max_iters: Maximum number of iterations for the optimization.
-        gamma: Learning rate.
-     Returns:
-        weigth_list[-1]:Optimized weight vector after gradient descent
-        loss_values[-1]: The final loss value.
-     """
+    Linear regression using gradient descent
+    Args:
+        y: Vector of labels. (shape (N,))
+       tx: Matrix of features/input data. (shape (N,D))
+       initial_w: Initial vector of weights for the model. (shape (D, ))
+       max_iters: Maximum number of iterations for the optimization.
+       gamma: Learning rate.
+    Returns:
+       weigth_list[-1]:Optimized weight vector after gradient descent
+       loss_values[-1]: The final loss value.
+    """
     weigth_list = [initial_w]
     w = initial_w
     loss_values = [calculate_mse_loss(y, tx, w)]
@@ -150,23 +145,27 @@ def mean_squared_error_gd(y, tx, initial_w, max_iters, gamma):
         loss = calculate_mse_loss(y, tx, w)
         weigth_list.append(w)
         loss_values.append(loss)
-        print("Mean Squared Error GD => {0}/{1}: loss={2}".format(iter_num, max_iters - 1,
-                                                                  loss))  # for tracking the situation
+        print(
+            "Mean Squared Error GD => {0}/{1}: loss={2}".format(
+                iter_num, max_iters - 1, loss
+            )
+        )  # for tracking the situation
     return weigth_list[-1], loss_values[-1]
 
-def mean_squared_error_sgd(y, tx, initial_w,max_iters, gamma):
+
+def mean_squared_error_sgd(y, tx, initial_w, max_iters, gamma):
     """
-         Linear regression using stochastic gradient descent
-         Args:
-             y: Vector of labels. (shape (N,))
-            tx: Matrix of features/input data. (shape (N,D))
-            initial_w: Initial vector of weights for the model. (shape (D, ))
-            max_iters: Maximum number of iterations for the optimization.
-            gamma: Learning rate.
-         Returns:
-            weigth_list[-1]:Optimized weight vector after stochastic gradient descent
-            loss_values[-1]: The final loss value.
-         """
+    Linear regression using stochastic gradient descent
+    Args:
+        y: Vector of labels. (shape (N,))
+       tx: Matrix of features/input data. (shape (N,D))
+       initial_w: Initial vector of weights for the model. (shape (D, ))
+       max_iters: Maximum number of iterations for the optimization.
+       gamma: Learning rate.
+    Returns:
+       weigth_list[-1]:Optimized weight vector after stochastic gradient descent
+       loss_values[-1]: The final loss value.
+    """
     w = initial_w
     weigth_list = [initial_w]
     loss_values = [calculate_mse_loss(y, tx, w)]
@@ -178,15 +177,20 @@ def mean_squared_error_sgd(y, tx, initial_w,max_iters, gamma):
             loss = calculate_mse_loss(yn, txn, w)
             weigth_list.append(w)
             loss_values.append(loss)
-        print("Stochastic Gradient Descent({bi}/{ti}): loss={l}".format(
-            bi=n_iter, ti=max_iters - 1, l=loss))  # for tracking the situation
+        print(
+            "Stochastic Gradient Descent({bi}/{ti}): loss={l}".format(
+                bi=n_iter, ti=max_iters - 1, l=loss
+            )
+        )  # for tracking the situation
     return weigth_list[-1], loss_values[-1]
+
 
 def least_sq_predict(x, w, threshold=0.5):
     scores = x.dot(w)
     y_pred = np.zeros_like(scores)
     y_pred[scores > threshold] = 1
     return y_pred, scores
+
 
 def least_squares(y, tx):
     """
@@ -208,8 +212,7 @@ def least_squares(y, tx):
     return w, loss
 
 
-
-def ridge_regression(y, tx, lambda_ ):
+def ridge_regression(y, tx, lambda_):
     """
     Ridge regression using normal equations
      Args:
@@ -224,7 +227,9 @@ def ridge_regression(y, tx, lambda_ ):
     I = np.identity(tx.shape[1])
     X_transpose_X = tx.T.dot(tx)
     X_transpose_y = tx.T.dot(y)
-    coef_mat = X_transpose_X + 2 * len(y) * lambda_ * I #2len(y) = 2N is for deleting 1/2N operation
+    coef_mat = (
+        X_transpose_X + 2 * len(y) * lambda_ * I
+    )  # 2len(y) = 2N is for deleting 1/2N operation
     constant_vector = X_transpose_y
 
     # Solve for weights w
@@ -232,7 +237,8 @@ def ridge_regression(y, tx, lambda_ ):
     loss = calculate_mse_loss(y, tx, w)
     return w, loss
 
-def logistic_regression(y, tx, initial_w,max_iters, gamma):
+
+def logistic_regression(y, tx, initial_w, max_iters, gamma):
     """
     Logistic Regression using Gradient Descent.
      Args:
@@ -259,52 +265,60 @@ def logistic_regression(y, tx, initial_w,max_iters, gamma):
         loss_values.append(loss)
     return weigth_list[-1], loss_values[-1]
 
+
 ############################# Logistic Regression with Regularization ##############################
 
-def logit_predict(x,w,threshold=0.5):
-    scores=sigmoid(x.dot(w))
-    y_pred=np.zeros_like(scores)
-    y_pred[scores>threshold]=1
-    return y_pred,scores
+
+def logit_predict(x, w, threshold=0.5):
+    scores = sigmoid(x.dot(w))
+    y_pred = np.zeros_like(scores)
+    y_pred[scores > threshold] = 1
+    return y_pred, scores
+
 
 def calculate_logistic_regression_regularized(y, tx, w, lambda_, predictions):
     """
-        Compute the gradient of the negative log likelihood for logistic regression with regularization term for l2".
+    Compute the gradient of the negative log likelihood for logistic regression with regularization term for l2".
 
-        Args:
-            y: A numpy array of shape (N,) containing the observed outputs.
-            tx: A numpy array of shape (N, D) containing the feature matrix of the data.
-            w: A numpy array of shape (D,) which is the weight vector.
-            lambda_: Regularization parameter.
-            predictions: The result of sigmoid function.
+    Args:
+        y: A numpy array of shape (N,) containing the observed outputs.
+        tx: A numpy array of shape (N, D) containing the feature matrix of the data.
+        w: A numpy array of shape (D,) which is the weight vector.
+        lambda_: Regularization parameter.
+        predictions: The result of sigmoid function.
 
-        Returns:
-            gradient_vector_regularized: Gradient vector which has shape (D,)
-        """
-    gradient_vector_regularized = tx.T.dot(predictions - y) / y.shape[0] + 2 * lambda_ * w
+    Returns:
+        gradient_vector_regularized: Gradient vector which has shape (D,)
+    """
+    gradient_vector_regularized = (
+        tx.T.dot(predictions - y) / y.shape[0] + 2 * lambda_ * w
+    )
     return gradient_vector_regularized
 
-def reg_logistic_regression(y, tx, lambda_ ,initial_w, max_iters, gamma):
-    """
-        Regularized logistic regression using gradient descent
-         Args:
-            y: Vector of labels. (shape (N,))
-            tx: Matrix of features/input data. (shape (N,D))
-            initial_w: Initial vector of weights for the model. (shape (D, ))
-            max_iters: Maximum number of iterations for the optimization.
-            gamma: Learning rate.
 
-         Returns:
-            weigth_list[-1]: Optimized weight vector.
-            loss_values[-1]: The final loss value.
-        """
+def reg_logistic_regression(y, tx, lambda_, initial_w, max_iters, gamma):
+    """
+    Regularized logistic regression using gradient descent
+     Args:
+        y: Vector of labels. (shape (N,))
+        tx: Matrix of features/input data. (shape (N,D))
+        initial_w: Initial vector of weights for the model. (shape (D, ))
+        max_iters: Maximum number of iterations for the optimization.
+        gamma: Learning rate.
+
+     Returns:
+        weigth_list[-1]: Optimized weight vector.
+        loss_values[-1]: The final loss value.
+    """
     weight_list = [initial_w]
     loss_values = []
     w = initial_w
 
     for _ in range(max_iters):
         predictions = sigmoid(tx.dot(w))
-        gradient = calculate_logistic_regression_regularized(y, tx, w, lambda_, predictions)
+        gradient = calculate_logistic_regression_regularized(
+            y, tx, w, lambda_, predictions
+        )
         w = w - gamma * gradient
         loss = calculate_logistic_loss(y, tx, w)
 
@@ -313,13 +327,16 @@ def reg_logistic_regression(y, tx, lambda_ ,initial_w, max_iters, gamma):
 
     return weight_list[-1], loss_values[-1]
 
+
 ############################# Ridge Regression with regularization ##############################
+
 
 def ridge_predict(x, w, threshold=0.5):
     scores = x.dot(w)
     y_pred = np.zeros_like(scores)
     y_pred[scores > threshold] = 1
     return y_pred, scores
+
 
 def calculate_ridge_regression_regularized(y, tx, w, lambda_):
     """
@@ -337,6 +354,7 @@ def calculate_ridge_regression_regularized(y, tx, w, lambda_):
     N = len(y)
     gradient_vector_regularized = -tx.T.dot(y - tx.dot(w)) / N + 2 * lambda_ * w
     return gradient_vector_regularized
+
 
 def ridge_regression_gd(y, tx, lambda_, initial_w, max_iters, gamma):
     """
