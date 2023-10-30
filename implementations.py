@@ -22,8 +22,9 @@ def calculate_gradient(y, tx, w):
     """
     This function calculates the gradient at w and return gradient and error values.
     Args:
-        tx: A numpy array of shape (N,) containing the observed outputs.
-        error:
+        y: A numpy array of shape (N,) containing the observed outputs.
+        tx: A numpy array of shape (N, D) containing the feature matrix of the data.
+        w: A numpy array of shape (D,) which is the weight vector.
 
     Returns:
        The gradient of least squares (shape (D,)) and the error between observed and predicted outputs (shape (N,))
@@ -157,7 +158,7 @@ def mean_squared_error_sgd(y, tx, initial_w, max_iters, gamma):
     """
     Linear regression using stochastic gradient descent
     Args:
-        y: Vector of labels. (shape (N,))
+       y: Vector of labels. (shape (N,))
        tx: Matrix of features/input data. (shape (N,D))
        initial_w: Initial vector of weights for the model. (shape (D, ))
        max_iters: Maximum number of iterations for the optimization.
@@ -196,11 +197,11 @@ def least_squares(y, tx):
     """
     Linear regression with normal equations
      Args:
-         y: Vector of labels. (shape (N,))
+        y: Vector of labels. (shape (N,))
         tx: Matrix of features/input data. (shape (N,D)).
      Returns:
-        weigth_list[-1]: Optimized weight vector.
-        loss_values[-1]: The final loss value.
+        w: Optimized weight vector.
+        loss: The final loss value.
     """
     # Calculate the terms of the normal equations
     X_transpose_X = tx.T.dot(tx)
@@ -216,12 +217,12 @@ def ridge_regression(y, tx, lambda_):
     """
     Ridge regression using normal equations
      Args:
-         y: Vector of labels. (shape (N,))
+        y: Vector of labels. (shape (N,))
         tx: Matrix of features/input data. (shape (N,D)).
         lambda_: Regularization parameter.
      Returns:
-        weigth_list: Optimized weight vector.
-        loss_values: The final loss value.
+        w: Optimized weight vector.
+        loss: The final loss value.
     """
 
     I = np.identity(tx.shape[1])
@@ -249,10 +250,11 @@ def logistic_regression(y, tx, initial_w, max_iters, gamma):
         gamma: Learning rate.
 
      Returns:
-        weigth_list: Optimized weight vector.
-        loss_values: The final loss value.
+        weight: Optimized weight vector.
+        loss: The final loss value.
     """
     weigth = initial_w
+    loss = calculate_logistic_loss(y, tx, weight)
     for i in range(max_iters):
         # compute the gradient
         gradient_vector = calculate_logistic_gradient(y, tx, weight)
@@ -303,11 +305,12 @@ def reg_logistic_regression(y, tx, lambda_, initial_w, max_iters, gamma):
         max_iters: Maximum number of iterations for the optimization.
         gamma: Learning rate.
 
-         Returns:
-            weigth_list[-1]: Optimized weight vector.
-            loss_values[-1]: The final loss value.
+    Returns:
+        weigth: Optimized weight vector.
+        loss: The final loss value.
     """
     weight = initial_w
+    loss = calculate_logistic_loss(y, tx, weight)
 
     for _ in range(max_iters):
         predictions = sigmoid(tx.dot(weight))
@@ -318,8 +321,6 @@ def reg_logistic_regression(y, tx, lambda_, initial_w, max_iters, gamma):
         loss = calculate_logistic_loss(y, tx, weight)
 
     return weight, loss
-
-
 
 
 ############################# Ridge Regression with regularization ##############################
@@ -363,12 +364,11 @@ def ridge_regression_gd(y, tx, lambda_, initial_w, max_iters, gamma):
         gamma: Learning rate.
 
     Returns:
-        weigth_list[-1]: Optimized weight vector.
-        loss_values[-1]: The final loss value.
+        w: Optimized weight vector.
+        loss: The final loss value.
     """
-    weight_list = [initial_w]
-    loss_values = []
     w = initial_w
+    loss = calculate_mse_loss(y, tx, w)
 
     for _ in range(max_iters):
         print(w)
@@ -376,7 +376,4 @@ def ridge_regression_gd(y, tx, lambda_, initial_w, max_iters, gamma):
         w = w - gamma * gradient
         loss = calculate_mse_loss(y, tx, w)
 
-        weight_list.append(w)
-        loss_values.append(loss)
-
-    return weight_list[-1], loss_values[-1]
+    return w, loss
