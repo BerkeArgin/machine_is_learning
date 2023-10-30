@@ -84,6 +84,10 @@ def sigmoid(x):
     )
     return np.clip(pred_probs, epsilon, 1 - epsilon)
 
+def sigmoidlog(t):
+    """apply the sigmoid function on t"""
+    return 1 / (1 + np.exp(-t))
+
 
 def calculate_logistic_loss(y, tx, w):
     """
@@ -114,7 +118,7 @@ def calculate_logistic_gradient(y, tx, w):
     Returns:
         gradient_vector: Gradient vector which has shape (D,)
     """
-    predicted_probs = sigmoid(tx.dot(w))
+    predicted_probs = sigmoidlog(tx.dot(w))
     gradient_vector = tx.T.dot(predicted_probs - y)
     return gradient_vector
 
