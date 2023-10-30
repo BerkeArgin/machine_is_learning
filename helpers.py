@@ -20,8 +20,8 @@ def load_csv_data(data_path, sub_sample=False, selected_cols=None):
         train_ids (np.array): ids of training data
         test_ids (np.array): ids of test data
     """
-    with open(os.path.join(data_path, "x_train.csv"), 'r') as f:
-        header = f.readline().strip().split(',')
+    with open(os.path.join(data_path, "x_train.csv"), "r") as f:
+        header = f.readline().strip().split(",")
 
     y_train = np.genfromtxt(
         os.path.join(data_path, "y_train.csv"),
@@ -37,23 +37,27 @@ def load_csv_data(data_path, sub_sample=False, selected_cols=None):
         os.path.join(data_path, "x_test.csv"), delimiter=",", skip_header=1
     )
 
-    col_names_train = np.genfromtxt(data_path + "/x_train.csv", delimiter=',', max_rows=1, dtype=str).tolist()
-    col_names_test = np.genfromtxt(data_path + "/x_test.csv", delimiter=',', max_rows=1, dtype=str).tolist()
+    col_names_train = np.genfromtxt(
+        data_path + "/x_train.csv", delimiter=",", max_rows=1, dtype=str
+    ).tolist()
+    col_names_test = np.genfromtxt(
+        data_path + "/x_test.csv", delimiter=",", max_rows=1, dtype=str
+    ).tolist()
     train_ids = x_train[:, 0].astype(dtype=int)
     test_ids = x_test[:, 0].astype(dtype=int)
     x_train = x_train[:, 1:]
     x_test = x_test[:, 1:]
 
-    final_columns=[]
+    final_columns = []
     # Select only the specified columns
     if selected_cols is not None:
-        selected_indices=[]
+        selected_indices = []
         for col_name in selected_cols:
             if col_name in header:
                 selected_indices.append(header.index(col_name) - 1)
                 final_columns.append(col_name)
         x_train = x_train[:, selected_indices]
-        x_test = x_test[:,selected_indices]
+        x_test = x_test[:, selected_indices]
 
     # sub-sample
     if sub_sample:
@@ -61,7 +65,16 @@ def load_csv_data(data_path, sub_sample=False, selected_cols=None):
         x_train = x_train[::50]
         train_ids = train_ids[::50]
 
-    return x_train, x_test, y_train, train_ids, test_ids, col_names_train, col_names_test,final_columns
+    return (
+        x_train,
+        x_test,
+        y_train,
+        train_ids,
+        test_ids,
+        col_names_train,
+        col_names_test,
+        final_columns,
+    )
 
 
 def create_csv_submission(ids, y_pred, name):
